@@ -14,6 +14,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Active SSE connections for progress streaming
 const activeScans = new Map();
 
+// Track which emails are currently being scanned (for polling fallback)
+const scanningEmails = new Set();
+
 // In-memory result cache — don't re-scan same email within 5 minutes
 const scanCache = new Map();
 const CACHE_TTL = 5 * 60 * 1000;
@@ -109,6 +112,7 @@ app.post('/api/scan', async (req, res) => {
   res.json({ scanId, status: 'started' });
 
   activeScanCount++;
+  scanningEmails.add(normalizedEmail);
 
   try {
     const report = await runFullScan(normalizedEmail, (progress) => {
@@ -121,6 +125,7 @@ app.post('/api/scan', async (req, res) => {
     });
 
     setCache(normalizedEmail, report);
+    scanningEmails.delete(normalizedEmail);
 
     const sseConn = activeScans.get(scanId);
     if (sseConn) {
@@ -131,6 +136,7 @@ app.post('/api/scan', async (req, res) => {
     }
     activeScans.delete(scanId);
   } catch (err) {
+    scanningEmails.delete(normalizedEmail);
     const sseConn = activeScans.get(scanId);
     if (sseConn) {
       try {
@@ -142,6 +148,16 @@ app.post('/api/scan', async (req, res) => {
   } finally {
     activeScanCount--;
   }
+});
+
+// Polling status endpoint — used by frontend when SSE drops mid-scan
+// Returns: { status: 'complete', report } | { status: 'scanning' } | { status: 'idle' }
+app.get('/api/scan/status/:email', (req, res) => {
+  const email = decodeURIComponent(req.params.email).trim().toLowerCase();
+  const cached = getCached(email);
+  if (cached) return res.json({ status: 'complete', report: cached });
+  if (scanningEmails.has(email)) return res.json({ status: 'scanning' });
+  return res.json({ status: 'idle' });
 });
 
 // Quick lookup endpoint

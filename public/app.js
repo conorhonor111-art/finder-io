@@ -173,26 +173,81 @@ async function startScan() {
 async function fallbackScan(email, btn, progressSection) {
   const progressLabel = document.getElementById('progressLabel');
   const progressBar = document.getElementById('progressBar');
-  progressLabel.textContent = 'Running full scan (direct mode)...';
-  progressBar.style.width = '50%';
 
-  try {
-    const resp = await fetch(`/api/quick/${encodeURIComponent(email)}`);
-    const report = await resp.json();
-    progressBar.style.width = '100%';
+  // First check status — if scan is still running server-side, poll until done
+  // This handles Railway's SSE timeout cutting the connection before the scan finishes
+  const MAX_WAIT_MS = 3 * 60 * 1000; // 3 minutes
+  const POLL_INTERVAL = 2500;
+  const started = Date.now();
+  let dots = 0;
 
-    setTimeout(() => {
-      progressSection.style.display = 'none';
-      currentReport = report;
-      renderResults(report);
-      saveHistory(email, report?.summary?.totalPhonesFound || 0);
+  async function poll() {
+    try {
+      const resp = await fetch(`/api/scan/status/${encodeURIComponent(email)}`);
+      const data = await resp.json();
+
+      if (data.status === 'complete') {
+        // Got result from polling — render it
+        progressBar.style.width = '100%';
+        progressLabel.textContent = 'Scan complete — building intelligence report...';
+        setTimeout(() => {
+          progressSection.style.display = 'none';
+          currentReport = data.report;
+          renderResults(data.report);
+          saveHistory(email, data.report?.summary?.totalPhonesFound || 0);
+          resetBtn(btn);
+        }, 600);
+        return;
+      }
+
+      if (data.status === 'scanning') {
+        // Still running — update label and keep polling
+        dots = (dots + 1) % 4;
+        const elapsed = Math.round((Date.now() - started) / 1000);
+        progressLabel.textContent = `Scan running${'.'.repeat(dots + 1)} (${elapsed}s)`;
+        // Nudge progress bar forward without exceeding 90%
+        const current = parseFloat(progressBar.style.width) || 50;
+        if (current < 90) progressBar.style.width = (current + 1.5) + '%';
+
+        if (Date.now() - started < MAX_WAIT_MS) {
+          setTimeout(poll, POLL_INTERVAL);
+        } else {
+          progressLabel.textContent = 'Scan timed out — please try again';
+          progressLabel.style.color = '#ff1744';
+          resetBtn(btn);
+        }
+        return;
+      }
+
+      // status === 'idle' means no active scan and no cache hit
+      // Fall through to direct scan request
+      progressLabel.textContent = 'Running full scan (direct mode)...';
+      progressBar.style.width = '50%';
+      const quickResp = await fetch(`/api/quick/${encodeURIComponent(email)}`);
+      if (!quickResp.ok) {
+        const err = await quickResp.json();
+        throw new Error(err.error || `HTTP ${quickResp.status}`);
+      }
+      const report = await quickResp.json();
+      progressBar.style.width = '100%';
+      setTimeout(() => {
+        progressSection.style.display = 'none';
+        currentReport = report;
+        renderResults(report);
+        saveHistory(email, report?.summary?.totalPhonesFound || 0);
+        resetBtn(btn);
+      }, 500);
+
+    } catch (err) {
+      progressLabel.textContent = 'Scan failed: ' + err.message;
+      progressLabel.style.color = '#ff1744';
       resetBtn(btn);
-    }, 500);
-  } catch (err) {
-    progressLabel.textContent = 'Scan failed: ' + err.message;
-    progressLabel.style.color = '#ff1744';
-    resetBtn(btn);
+    }
   }
+
+  progressLabel.textContent = 'Reconnecting...';
+  progressBar.style.width = '50%';
+  await poll();
 }
 
 function resetBtn(btn) {
