@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FINDER_IO</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="scanlines"></div>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <span class="logo-bracket">[</span>
+        <span class="logo-text">FINDER</span>
+        <span class="logo-io">_IO</span>
+        <span class="logo-bracket">]</span>
+        <span class="version">v3.1</span>
+      </div>
+      <p class="tagline">OSINT EMAIL INTELLIGENCE ENGINE</p>
+      <p class="tagline-sub">Phone • Identity • Registrations • Breaches • Social • DNS</p>
+    </header>
+
+    <div class="search-section">
+      <div class="search-box">
+        <div class="search-icon">⌕</div>
+        <input type="email" id="emailInput" placeholder="target@email.com" autocomplete="off" spellcheck="false" />
+        <button id="scanBtn" onclick="startScan()">
+          <span class="btn-text">DEEP SCAN</span>
+          <span class="btn-loading" style="display:none"><span class="spinner"></span></span>
+        </button>
+      </div>
+      <div class="engine-badges">
+        <span class="badge">Google Dorking</span>
+        <span class="badge">DarkSearch.io</span>
+        <span class="badge">Ahmia (Tor)</span>
+        <span class="badge">GhostProject</span>
+        <span class="badge">Spy.pet (Discord)</span>
+        <span class="badge">30+ Social Platforms</span>
+        <span class="badge">50+ Registration Checks</span>
+        <span class="badge">OpenCorporates</span>
+        <span class="badge">LinkedIn Probe</span>
+        <span class="badge">Breach Intel</span>
+        <span class="badge">IntelX Deep</span>
+        <span class="badge">HudsonRock</span>
+        <span class="badge">Phone Cascade Reverse</span>
+        <span class="badge">DNS/WHOIS</span>
+        <span class="badge">People Search</span>
+        <span class="badge">Shodan</span>
+        <span class="badge">Snusbase</span>
+        <span class="badge">Dehashed</span>
+        <span class="badge">Triple-Check Verify</span>
+      </div>
+    </div>
+
+    <!-- Search History -->
+    <div class="history-section" id="historySection" style="display:none">
+      <div class="history-header">
+        <span>RECENT SCANS</span>
+        <button class="clear-history" onclick="clearHistory()">CLEAR</button>
+      </div>
+      <div id="historyList" class="history-list"></div>
+    </div>
+
+    <!-- Progress -->
+    <div id="progressSection" class="progress-section" style="display:none">
+      <div class="progress-header">
+        <span class="pulse-dot"></span>
+        <span id="progressLabel">Initializing scan...</span>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="engine-grid" id="engineGrid"></div>
+      <div class="engine-log" id="engineLog"></div>
+    </div>
+
+    <!-- Results -->
+    <div id="resultsSection" class="results-section" style="display:none">
+      <div class="results-header">
+        <h2>INTELLIGENCE REPORT</h2>
+        <div class="result-actions">
+          <button class="export-btn" onclick="exportJSON()">JSON</button>
+          <button class="export-btn" onclick="exportCSV()">CSV</button>
+          <button class="export-btn" onclick="exportTXT()">TXT</button>
+          <span class="result-meta" id="resultTarget"></span>
+        </div>
+      </div>
+
+      <!-- Summary Dashboard (TOP) -->
+      <div class="result-card summary-card" id="summaryCard" style="display:none">
+        <div class="card-header summary-header">
+          <span class="card-icon">◈</span>
+          <span>SCAN OVERVIEW</span>
+        </div>
+        <div class="card-body" id="summaryResults"></div>
+      </div>
+
+      <!-- Identity Card -->
+      <div class="result-card" id="identityCard" style="display:none">
+        <div class="card-header identity-header">
+          <span class="card-icon">◎</span>
+          <span>IDENTITY PROFILE</span>
+        </div>
+        <div class="card-body" id="identityResults"></div>
+      </div>
+
+      <!-- Phone Numbers -->
+      <div class="result-card" id="phoneCard" style="display:none">
+        <div class="card-header phone-header">
+          <span class="card-icon">☎</span>
+          <span>PHONE NUMBERS</span>
+          <span class="card-count" id="phoneCount"></span>
+        </div>
+        <div class="card-body" id="phoneResults"></div>
+      </div>
+
+      <!-- Clues / Evidence Chain -->
+      <div class="result-card" id="cluesCard" style="display:none">
+        <div class="card-header clues-header" onclick="toggleClues()">
+          <span class="card-icon">⬢</span>
+          <span>INTELLIGENCE CLUES / EVIDENCE CHAIN</span>
+          <span class="card-count" id="cluesCount"></span>
+          <span class="toggle-arrow" id="cluesArrow">▼</span>
+        </div>
+        <div class="card-body" id="cluesResults" style="display:none"></div>
+      </div>
+
+      <!-- Registrations -->
+      <div class="result-card" id="regCard" style="display:none">
+        <div class="card-header reg-header">
+          <span class="card-icon">⊞</span>
+          <span>PLATFORM REGISTRATIONS</span>
+          <span class="card-count" id="regCount"></span>
+        </div>
+        <div class="card-body" id="regResults"></div>
+      </div>
+
+      <!-- Social Profiles -->
+      <div class="result-card" id="socialCard" style="display:none">
+        <div class="card-header social-header">
+          <span class="card-icon">◉</span>
+          <span>SOCIAL PROFILES</span>
+          <span class="card-count" id="socialCount"></span>
+        </div>
+        <div class="card-body" id="socialResults"></div>
+      </div>
+
+      <!-- Breach Data -->
+      <div class="result-card" id="breachCard" style="display:none">
+        <div class="card-header breach-header">
+          <span class="card-icon">⚠</span>
+          <span>BREACH / STEALER INTELLIGENCE</span>
+        </div>
+        <div class="card-body" id="breachResults"></div>
+      </div>
+
+      <!-- Related Emails -->
+      <div class="result-card" id="relatedEmailsCard" style="display:none">
+        <div class="card-header related-header">
+          <span class="card-icon">✉</span>
+          <span>RELATED EMAILS</span>
+        </div>
+        <div class="card-body" id="relatedEmailsResults"></div>
+      </div>
+
+      <!-- DNS Info -->
+      <div class="result-card" id="dnsCard" style="display:none">
+        <div class="card-header dns-header">
+          <span class="card-icon">⬡</span>
+          <span>DNS / DOMAIN RECON</span>
+        </div>
+        <div class="card-body" id="dnsResults"></div>
+      </div>
+
+      <!-- Email Verification -->
+      <div class="result-card" id="emailVerCard" style="display:none">
+        <div class="card-header emailver-header">
+          <span class="card-icon">✓</span>
+          <span>EMAIL VERIFICATION</span>
+        </div>
+        <div class="card-body" id="emailVerResults"></div>
+      </div>
+
+      <!-- Triple-Check Verification -->
+      <div class="result-card" id="verCard" style="display:none">
+        <div class="card-header ver-header">
+          <span class="card-icon">⊛</span>
+          <span>TRIPLE-CHECK VERIFICATION</span>
+          <span class="card-count" id="verCount"></span>
+        </div>
+        <div class="card-body" id="verResults"></div>
+      </div>
+
+      <!-- Raw Data -->
+      <div class="result-card" id="rawCard" style="display:none">
+        <div class="card-header raw-header" onclick="toggleRaw()">
+          <span class="card-icon">{ }</span>
+          <span>RAW INTELLIGENCE DATA</span>
+          <span class="toggle-arrow" id="rawArrow">▼</span>
+        </div>
+        <div class="card-body" id="rawResults" style="display:none"></div>
+      </div>
+
+    </div>
+
+    <footer>
+      <span>FINDER_IO v3.1 — OSINT Email Intelligence Engine</span>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
