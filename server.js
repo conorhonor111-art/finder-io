@@ -192,7 +192,7 @@ app.get('/api/quick/:email', async (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
-    version: '2.1',
+    version: '2.2',
     activeScans: activeScanCount,
     cacheSize: scanCache.size,
     uptime: process.uptime(),
@@ -214,8 +214,9 @@ process.on('unhandledRejection', (err) => {
 
 app.listen(PORT, () => {
   console.log(`\n  ╔══════════════════════════════════════════╗`);
-  console.log(`  ║          FINDER_IO v2.1 — LIVE           ║`);
+  console.log(`  ║          FINDER_IO v2.2 — LIVE           ║`);
   console.log(`  ║  http://localhost:${PORT}                  ║`);
   console.log(`  ║  OSINT Email Intelligence Engine         ║`);
+  console.log(`  ║  SSE polling fallback: active            ║`);
   console.log(`  ╚══════════════════════════════════════════╝\n`);
 });
