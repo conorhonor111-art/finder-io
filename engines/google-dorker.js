@@ -43,7 +43,7 @@ function extractPhoneNumbers(text) {
   for (const pattern of patterns) {
     const matches = text.match(pattern) || [];
     for (const m of matches) {
-      let cleaned = m.replace(/^tel:/i, '').replace(/[^\d+]/g, '');
+      let cleaned = m.replace(/^tel:/i, '').replace(/[^\d]/g, '');
       if (cleaned.length >= 7 && cleaned.length <= 16) {
         if (/^(19|20)\d{6,}$/.test(cleaned)) continue; // dates/timestamps: 20260911, 2026091116, etc
         if (/^1[5-9]\d{9,}$/.test(cleaned)) continue; // unix timestamps (1.5T+)
@@ -81,7 +81,7 @@ function extractPhoneNumbers(text) {
       found.set(match.cleaned, match.raw);
     }
   }
-  return [...found.values()];
+  return [...found.keys()];
 }
 
 async function searchEngine(query, engine = 'google') {

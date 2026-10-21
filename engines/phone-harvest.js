@@ -1314,7 +1314,7 @@ async function truecallerVerify(phones) {
   const results = [];
   for (const phone of phones.slice(0, 3)) {
     try {
-      const cleaned = phone.replace(/[^\d+]/g, '');
+      const cleaned = phone.replace(/[^\d]/g, '');
       const resp = await safeGet(
         `https://search5-noneu.truecaller.com/v2/search?q=${encodeURIComponent(cleaned)}&countryCode=US&type=4&locAddr=&encoding=json`,
         {
