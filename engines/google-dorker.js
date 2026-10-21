@@ -43,16 +43,18 @@ function extractPhoneNumbers(text) {
   for (const pattern of patterns) {
     const matches = text.match(pattern) || [];
     for (const m of matches) {
-      let cleaned = m.replace(/^tel:/i, '').replace(/[^\d]/g, '');
+      const stripped = m.replace(/^tel:/i, '');
+      const hadPlus = stripped.trimStart().startsWith('+');
+      let cleaned = stripped.replace(/[^\d]/g, '');
       if (cleaned.length >= 7 && cleaned.length <= 16) {
-        if (/^(19|20)\d{6,}$/.test(cleaned)) continue; // dates/timestamps: 20260911, 2026091116, etc
+        if (/^(19|20)\d{6,}$/.test(cleaned) && !hadPlus) continue; // dates/timestamps — but keep +20 Egypt, +19x intl
         if (/^1[5-9]\d{9,}$/.test(cleaned)) continue; // unix timestamps (1.5T+)
-        if (/^\d{12,}$/.test(cleaned)) continue; // bare 12+ digits without + = ID not phone
+        if (/^\d{12,}$/.test(cleaned) && !hadPlus) continue; // bare 12+ digits without + = ID not phone
         if (/^0{4,}/.test(cleaned)) continue; // zero-padded junk
         if (/^(\d)\1{6,}$/.test(cleaned)) continue; // repeated digits
         if (/^555\d{7}$/.test(cleaned)) continue; // US 555 fictitious numbers
         if (/^1555\d{7}$/.test(cleaned)) continue; // +1 555 fictitious
-        if (/^10\d{8,}$/.test(cleaned) && !cleaned.startsWith('+')) continue; // 10-prefix junk (often HTML IDs or port numbers)
+        if (/^10\d{8,}$/.test(cleaned) && !hadPlus) continue; // 10-prefix junk (often HTML IDs or port numbers)
         if (/^(800|888|877|866|855|844|833|822)\d{7}$/.test(cleaned)) continue; // US toll-free (usually not personal)
         rawMatches.push({ raw: m.trim(), cleaned });
       }

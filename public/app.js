@@ -414,12 +414,12 @@ function renderPhones(report) {
 
   for (const phone of allPhones) {
     const displayNum = phone.formatted || phone.raw || phone.number || '';
-    const rawDigits = (phone.e164 || phone.raw || phone.number || '').replace(/[^\d+]/g, '');
+    const rawDigits = (phone.e164 || phone.raw || phone.number || '').replace(/[^\d]/g, '');
 
     // Find the clue that sourced this phone
     const clue = phoneClues.find(c => {
-      const cleanClue = c.value.replace(/[^\d+]/g, '');
-      return cleanClue === rawDigits || (phone.e164 && cleanClue === phone.e164.replace(/[^\d+]/g, ''));
+      const cleanClue = c.value.replace(/[^\d]/g, '');
+      return cleanClue === rawDigits || (phone.e164 && cleanClue === phone.e164.replace(/[^\d]/g, ''));
     });
 
     const typeLabel = phone.lineType || phone.type;
